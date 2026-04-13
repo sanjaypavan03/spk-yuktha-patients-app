@@ -643,18 +643,18 @@ const getStyles = (theme: any) => StyleSheet.create({
         borderWidth: 1, 
         zIndex: 5000 
     },
-    menuScroll: { maxHeight: 300 },
+    menuScroll: { maxHeight: 220 },
     menuItem: { 
         flexDirection: 'row', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        paddingVertical: 14, 
+        paddingVertical: 10, 
         paddingHorizontal: 16, 
         borderRadius: 14, 
-        marginBottom: 4 
+        marginBottom: 2 
     },
     menuItemText: { 
-        fontSize: 15, 
+        fontSize: 14, 
         fontWeight: '500' 
     },
     skeletonList: { gap: 12 },
