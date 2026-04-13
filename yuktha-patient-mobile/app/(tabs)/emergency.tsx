@@ -1110,14 +1110,40 @@ export default function EmergencyHubScreen() {
                                             />
                                         </View>
                                         {editForm.knownAllergies && (
-                                            <TextInput 
-                                                style={styles.textAreaSmall}
-                                                multiline
-                                                placeholder="e.g. Penicillin - causes anaphylaxis"
-                                                placeholderTextColor="#94A3B8"
-                                                value={editForm.allergiesDetails}
-                                                onChangeText={t => setEditForm({...editForm, allergiesDetails: t})}
-                                            />
+                                            <View style={{ gap: 8, marginTop: 12 }}>
+                                                <TouchableOpacity 
+                                                    style={styles.dropdownSmall}
+                                                    onPress={(e) => {
+                                                        // @ts-ignore
+                                                        e.currentTarget.measure((x, y, w, h, px, py) => {
+                                                            setSelector({
+                                                                visible: true,
+                                                                type: 'allergiesDetails',
+                                                                options: ["Penicillin", "Sulfa Drugs", "Latex", "Peanuts", "Bee Stings", "Shellfish", "Aspirin", "Other..."] as any,
+                                                                pos: { x: px, y: py + h, width: w }
+                                                            });
+                                                        });
+                                                    }}
+                                                >
+                                                    <Text style={styles.dropdownText}>
+                                                        {["Penicillin", "Sulfa Drugs", "Latex", "Peanuts", "Bee Stings", "Shellfish", "Aspirin"].includes(editForm.allergiesDetails) 
+                                                            ? editForm.allergiesDetails 
+                                                            : editForm.allergiesDetails ? "Other (Custom Entered)" : "Select Common Allergy"}
+                                                    </Text>
+                                                    <ChevronDown size={18} color="#94A3B8" />
+                                                </TouchableOpacity>
+                                                
+                                                {(editForm.allergiesDetails && !["Penicillin", "Sulfa Drugs", "Latex", "Peanuts", "Bee Stings", "Shellfish", "Aspirin"].includes(editForm.allergiesDetails)) || editForm.allergiesDetails === "" ? (
+                                                    <TextInput 
+                                                        style={styles.textAreaSmall}
+                                                        multiline
+                                                        placeholder="Describe specifically..."
+                                                        placeholderTextColor="#94A3B8"
+                                                        value={editForm.allergiesDetails}
+                                                        onChangeText={t => setEditForm({...editForm, allergiesDetails: t})}
+                                                    />
+                                                ) : null}
+                                            </View>
                                         )}
                                     </View>
 
@@ -1132,14 +1158,40 @@ export default function EmergencyHubScreen() {
                                             />
                                         </View>
                                         {editForm.hasChronic && (
-                                            <TextInput 
-                                                style={styles.textAreaSmall}
-                                                multiline
-                                                placeholder="e.g. Type 1 Diabetes, Epilepsy"
-                                                placeholderTextColor="#94A3B8"
-                                                value={editForm.chronicConditions}
-                                                onChangeText={t => setEditForm({...editForm, chronicConditions: t})}
-                                            />
+                                            <View style={{ gap: 8, marginTop: 12 }}>
+                                                <TouchableOpacity 
+                                                    style={styles.dropdownSmall}
+                                                    onPress={(e) => {
+                                                        // @ts-ignore
+                                                        e.currentTarget.measure((x, y, w, h, px, py) => {
+                                                            setSelector({
+                                                                visible: true,
+                                                                type: 'chronicConditions',
+                                                                options: ["Type 1 Diabetes", "Type 2 Diabetes", "Hypertension", "Asthma", "Epilepsy", "Thyroid Disorder", "Other..."] as any,
+                                                                pos: { x: px, y: py + h, width: w }
+                                                            });
+                                                        });
+                                                    }}
+                                                >
+                                                    <Text style={styles.dropdownText}>
+                                                        {["Type 1 Diabetes", "Type 2 Diabetes", "Hypertension", "Asthma", "Epilepsy", "Thyroid Disorder"].includes(editForm.chronicConditions) 
+                                                            ? editForm.chronicConditions 
+                                                            : editForm.chronicConditions ? "Other (Custom Entered)" : "Select Common Condition"}
+                                                    </Text>
+                                                    <ChevronDown size={18} color="#94A3B8" />
+                                                </TouchableOpacity>
+
+                                                {(editForm.chronicConditions && !["Type 1 Diabetes", "Type 2 Diabetes", "Hypertension", "Asthma", "Epilepsy", "Thyroid Disorder"].includes(editForm.chronicConditions)) || editForm.chronicConditions === "" ? (
+                                                    <TextInput 
+                                                        style={styles.textAreaSmall}
+                                                        multiline
+                                                        placeholder="Describe condition..."
+                                                        placeholderTextColor="#94A3B8"
+                                                        value={editForm.chronicConditions}
+                                                        onChangeText={t => setEditForm({...editForm, chronicConditions: t})}
+                                                    />
+                                                ) : null}
+                                            </View>
                                         )}
                                     </View>
 
