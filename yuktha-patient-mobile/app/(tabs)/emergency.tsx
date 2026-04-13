@@ -1538,7 +1538,12 @@ export default function EmergencyHubScreen() {
                         pos={selector.pos}
                         currentVal={(editForm as any)[selector.type]}
                         onSelect={(val: string) => {
-                            setEditForm({...editForm, [selector.type]: val});
+                            let newVal = val;
+                            // If user clicks "Other...", we clear the value so they can "Specify"
+                            if (val === "Other...") {
+                                newVal = "";
+                            }
+                            setEditForm({...editForm, [selector.type]: newVal});
                             setSelector({...selector, visible: false});
                         }}
                         theme={theme}
