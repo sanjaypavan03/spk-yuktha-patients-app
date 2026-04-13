@@ -43,29 +43,9 @@ export async function GET(
       );
     }
 
-    // ── NOTIFY CONTACTS & LOG THE SCAN ──
-    let notificationSent = false;
-    try {
-      const { sendEmergencyAlert } = await import('@/lib/notifications');
-      notificationSent = await sendEmergencyAlert(emergencyToken.patientId, 'public');
-
-      const QRScanLog = (await import('@/models/QRScanLog')).default;
-      await QRScanLog.create({
-        scannedBy: 'public',
-        scannerRole: 'anonymous',
-        hospitalId: null,
-        patientId: emergencyToken.patientId,
-        token,
-        tier: 1,
-        ipAddress: request.headers.get('x-forwarded-for') || (request as any).ip || 'unknown',
-        userAgent: request.headers.get('user-agent') || 'unknown',
-        accessGranted: true,
-        notificationSent,
-      });
-    } catch (logOrNotifyError) {
-      console.error('Failed to log or notify scan:', logOrNotifyError);
-    }
-
+    // ── REMOVED: Family alert on GET to prevent refresh-spam ──
+    // Alerts are now triggered by POST (button click) in this same route
+    
     const user = await User.findById(emergencyToken.patientId);
     if (!user) {
       return NextResponse.json(
@@ -115,6 +95,53 @@ export async function GET(
       { error: 'Internal server error' },
       { status: 500 }
     );
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  context: { params: Promise<{ token: string }> }
+) {
+  try {
+    const { token } = await context.params;
+
+    if (!token || !isValidUUID(token)) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 400 });
+    }
+
+    await dbConnect();
+
+    const emergencyToken = await EmergencyToken.findOne({ token, isActive: true });
+    if (!emergencyToken) {
+      return NextResponse.json({ error: 'Token invalid' }, { status: 404 });
+    }
+
+    // ── NOTIFY CONTACTS & LOG THE SCAN ──
+    let notificationSent = false;
+    try {
+      const { sendEmergencyAlert } = await import('@/lib/notifications');
+      notificationSent = await sendEmergencyAlert(emergencyToken.patientId, 'public');
+
+      const QRScanLog = (await import('@/models/QRScanLog')).default;
+      await QRScanLog.create({
+        scannedBy: 'public',
+        scannerRole: 'anonymous',
+        hospitalId: null,
+        patientId: emergencyToken.patientId,
+        token,
+        tier: 1,
+        ipAddress: request.headers.get('x-forwarded-for') || (request as any).ip || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown',
+        accessGranted: true,
+        notificationSent,
+      });
+    } catch (err) {
+      console.error('Scan notification error:', err);
+    }
+
+    return NextResponse.json({ success: true, notificationSent });
+  } catch (error) {
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
 

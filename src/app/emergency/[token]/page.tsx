@@ -80,7 +80,15 @@ export default function EmergencyPage() {
 
           <div className="py-4">
              <Button 
-                onClick={() => setIsRevealed(true)}
+                onClick={async () => {
+                  setIsRevealed(true);
+                  // Fire the scan alert & log via POST
+                  try {
+                    await fetch(`/api/emergency/${token}`, { method: 'POST' });
+                  } catch (e) {
+                    console.error('Failed to trigger scan alert:', e);
+                  }
+                }}
                 className="w-full h-20 text-xl font-black bg-[#10B981] hover:bg-[#059669] text-white shadow-[0_0_60px_-15px_rgba(16,185,129,0.5)] rounded-[2.5rem] transition-all active:scale-95 border-b-4 border-emerald-800"
               >
                 ACCESS MEDICAL RECORD
