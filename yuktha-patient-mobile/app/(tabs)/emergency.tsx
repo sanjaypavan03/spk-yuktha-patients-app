@@ -559,11 +559,13 @@ const getStyles = (theme: any) => StyleSheet.create({
     inputSmall: {
         backgroundColor: '#F8FAFC',
         borderRadius: 12,
-        padding: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
         fontSize: 15,
         color: '#1E293B',
         borderWidth: 1,
         borderColor: '#E2E8F0',
+        minWidth: 60,
         ...Platform.select({
             web: { outlineStyle: 'none' }
         } as any)
@@ -614,7 +616,13 @@ const getStyles = (theme: any) => StyleSheet.create({
     },
     gridRow: { flexDirection: 'row', gap: 12 },
     gridCol: { flex: 1 },
-    surgeryRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+    surgeryRow: { 
+        flexDirection: 'row', 
+        gap: 8, 
+        marginBottom: 8,
+        width: '100%',
+        alignItems: 'center'
+    },
     addBtn: { marginTop: 8, padding: 8 },
     addBtnText: { color: theme.primary, fontWeight: 'bold', fontSize: 13 },
     switchSub: { fontSize: 12, color: '#94A3B8', marginTop: 2 },
