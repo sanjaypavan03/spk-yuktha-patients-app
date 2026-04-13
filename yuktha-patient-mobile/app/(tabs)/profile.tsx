@@ -33,7 +33,8 @@ import {
     HeartPulse,
     Info,
     CheckCircle2,
-    Sparkles
+    Sparkles,
+    Lock
 } from "lucide-react-native";
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../src/context/AuthContext';
