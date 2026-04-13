@@ -10,7 +10,21 @@ export async function GET(request: NextRequest) {
     const authUser = await getAuthenticatedUser(request);
     if (!authUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const medicalInfo = await MedicalInfo.findOne({ userId: authUser.userId }).lean();
+    const medicalInfo = await MedicalInfo.findOne({ patientId: authUser.userId }).lean() as any;
+    
+    // Map structured emergencyContacts array back to flattened fields for app compatibility
+    if (medicalInfo && medicalInfo.emergencyContacts && medicalInfo.emergencyContacts.length > 0) {
+        medicalInfo.emergencyContact1Name = medicalInfo.emergencyContacts[0].name;
+        medicalInfo.emergencyContact1Phone = medicalInfo.emergencyContacts[0].phone;
+        medicalInfo.emergencyContact1Relation = medicalInfo.emergencyContacts[0].relationship;
+        
+        if (medicalInfo.emergencyContacts.length > 1) {
+            medicalInfo.emergencyContact2Name = medicalInfo.emergencyContacts[1].name;
+            medicalInfo.emergencyContact2Phone = medicalInfo.emergencyContacts[1].phone;
+            medicalInfo.emergencyContact2Relation = medicalInfo.emergencyContacts[1].relationship;
+        }
+    }
+
     return NextResponse.json({ success: true, data: medicalInfo || {} });
   } catch (error: any) {
     return NextResponse.json({ error: 'Failed to fetch', details: error.message }, { status: 500 });
@@ -67,8 +81,8 @@ export async function POST(request: NextRequest) {
     }
 
     const medicalInfo = await MedicalInfo.findOneAndUpdate(
-      { userId: authUser.userId },
-      { $set: { ...updateData, userId: authUser.userId } },
+      { patientId: authUser.userId },
+      { $set: { ...updateData, patientId: authUser.userId } },
       { new: true, upsert: true, runValidators: false, setDefaultsOnInsert: true }
     ).lean();
 
