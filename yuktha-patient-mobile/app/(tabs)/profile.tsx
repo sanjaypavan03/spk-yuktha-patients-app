@@ -52,33 +52,35 @@ export default function ProfileScreen() {
     const [isSaving, setIsSaving] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [isCheckingStatus, setIsCheckingStatus] = useState(false);
     const [pinStage, setPinStage] = useState<'VERIFY_OLD' | 'SET_NEW'>('SET_NEW');
     const [typedPin, setTypedPin] = useState(['', '', '', '']);
     const [oldPinValue, setOldPinValue] = useState('');
     const [pinError, setPinError] = useState('');
 
     const openPinSettings = async () => {
-        setIsSaving(true);
+        // Open immediately for better responsiveness
+        setIsPinModalOpen(true);
+        setIsCheckingStatus(true);
+        setPinError('');
+        setTypedPin(['', '', '', '']);
+        setOldPinValue('');
+
         try {
             const res = await fetch(`${API_URL}/api/auth/vault-pin/check`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await res.json();
             
-            setPinError('');
-            setTypedPin(['', '', '', '']);
-            setOldPinValue('');
-            
             if (data.hasPin) {
                 setPinStage('VERIFY_OLD');
             } else {
                 setPinStage('SET_NEW');
             }
-            setIsPinModalOpen(true);
         } catch (error) {
-            Alert.alert("Error", "Unable to access security settings.");
+            setPinError("Unable to reach server. Try again.");
         } finally {
-            setIsSaving(false);
+            setIsCheckingStatus(false);
         }
     };
 
@@ -412,62 +414,72 @@ export default function ProfileScreen() {
                                 </Text>
                             </View>
 
-                            <View style={styles.pinDisplayRow}>
-                                {[0, 1, 2, 3].map((idx) => (
-                                    <View 
-                                        key={idx} 
-                                        style={[
-                                            styles.pinBox, 
-                                            typedPin[idx] !== '' && { borderColor: theme.primary, backgroundColor: theme.accent }
-                                        ]}
-                                    >
-                                        <Text style={styles.pinBoxText}>{typedPin[idx] ? '•' : ''}</Text>
+                            {isCheckingStatus ? (
+                                <View style={{ padding: 40 }}>
+                                    <ActivityIndicator size="large" color={theme.primary} />
+                                    <Text style={[styles.pinModalSub, { marginTop: 12 }]}>Checking security state...</Text>
+                                </View>
+                            ) : (
+                                <>
+                                    <View style={styles.pinDisplayRow}>
+                                        {[0, 1, 2, 3].map((idx) => (
+                                            <View 
+                                                key={idx} 
+                                                style={[
+                                                    styles.pinBox, 
+                                                    typedPin[idx] !== '' && { borderColor: theme.primary, backgroundColor: theme.accent }
+                                                ]}
+                                            >
+                                                <Text style={styles.pinBoxText}>{typedPin[idx] ? '•' : ''}</Text>
+                                            </View>
+                                        ))}
                                     </View>
-                                ))}
-                            </View>
 
-                            {pinError ? <Text style={styles.pinErrorText}>{pinError}</Text> : null}
+                                    {pinError ? <Text style={styles.pinErrorText}>{pinError}</Text> : null}
 
-                            <View style={styles.pinKeypad}>
-                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, '✓'].map((val) => (
-                                    <TouchableOpacity 
-                                        key={val}
-                                        style={[
-                                            styles.pinKey,
-                                            val === '✓' && { backgroundColor: theme.primary }
-                                        ]}
-                                        onPress={() => {
-                                            if (val === 'C') {
-                                                setTypedPin(['', '', '', '']);
-                                            } else if (val === '✓') {
-                                                handlePinSubmit();
-                                            } else {
-                                                const idx = typedPin.findIndex(p => p === '');
-                                                if (idx !== -1) {
-                                                    const p = [...typedPin];
-                                                    p[idx] = val.toString();
-                                                    setTypedPin(p);
-                                                }
-                                            }
-                                        }}
-                                    >
-                                        {val === '✓' ? (
-                                            <Check size={20} color="white" strokeWidth={3} />
-                                        ) : (
-                                            <Text style={[styles.pinKeyText, val === '✓' && { color: 'white' }]}>{val}</Text>
-                                        )}
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
+                                    <View style={styles.pinKeypad}>
+                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, '✓'].map((val) => (
+                                            <TouchableOpacity 
+                                                key={val}
+                                                style={[
+                                                    styles.pinKey,
+                                                    val === '✓' && { backgroundColor: theme.primary }
+                                                ]}
+                                                onPress={() => {
+                                                    if (val === 'C') {
+                                                        setTypedPin(['', '', '', '']);
+                                                    } else if (val === '✓') {
+                                                        handlePinSubmit();
+                                                    } else {
+                                                        const idx = typedPin.findIndex(p => p === '');
+                                                        if (idx !== -1) {
+                                                            const p = [...typedPin];
+                                                            p[idx] = val.toString();
+                                                            setTypedPin(p);
+                                                        }
+                                                    }
+                                                }}
+                                            >
+                                                {val === '✓' ? (
+                                                    <Check size={20} color="white" strokeWidth={3} />
+                                                ) : (
+                                                    <Text style={[styles.pinKeyText, val === '✓' && { color: 'white' }]}>{val}</Text>
+                                                )}
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </>
+                            )}
+                        </View>
 
-                            <TouchableOpacity 
-                                style={styles.closePinBtn} 
-                                onPress={() => {
-                                    setIsPinModalOpen(false);
-                                    setTypedPin(['', '', '', '']);
-                                    setPinError('');
-                                }}
-                            >
+                        <TouchableOpacity 
+                            style={styles.closePinBtn} 
+                            onPress={() => {
+                                setIsPinModalOpen(false);
+                                setTypedPin(['', '', '', '']);
+                                setPinError('');
+                            }}
+                        >
                                 <Text style={styles.closePinBtnText}>Cancel</Text>
                             </TouchableOpacity>
                         </View>
