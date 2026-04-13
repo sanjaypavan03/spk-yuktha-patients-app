@@ -1297,15 +1297,40 @@ export default function EmergencyHubScreen() {
                                                 </View>
                                                 <View style={{ flex: 1 }}>
                                                     <Text style={styles.inputLabelNested}>Relation</Text>
-                                                    <TextInput 
-                                                        style={styles.inputSmall}
-                                                        placeholder="e.g. Father"
-                                                        placeholderTextColor="#94A3B8"
-                                                        value={editForm.emergencyContact1Relation}
-                                                        onChangeText={t => setEditForm({...editForm, emergencyContact1Relation: t})}
-                                                    />
+                                                    <TouchableOpacity 
+                                                        style={styles.dropdownSmall}
+                                                        onPress={(e) => {
+                                                            // @ts-ignore
+                                                            e.currentTarget.measure((x, y, w, h, px, py) => {
+                                                                setSelector({
+                                                                    visible: true,
+                                                                    type: 'emergencyContact1Relation',
+                                                                    options: ["Spouse", "Father", "Mother", "Sibling", "Son", "Daughter", "Friend", "Caregiver", "Other..."] as any,
+                                                                    pos: { x: px, y: py + h, width: w }
+                                                                });
+                                                            });
+                                                        }}
+                                                    >
+                                                        <Text style={styles.dropdownText}>
+                                                            {["Spouse", "Father", "Mother", "Sibling", "Son", "Daughter", "Friend", "Caregiver"].includes(editForm.emergencyContact1Relation) 
+                                                                ? editForm.emergencyContact1Relation 
+                                                                : editForm.emergencyContact1Relation ? "Other..." : "Select"}
+                                                        </Text>
+                                                        <ChevronDown size={14} color="#94A3B8" />
+                                                    </TouchableOpacity>
                                                 </View>
                                             </View>
+
+                                            {/* Manual Relation Input if Other is selected or custom entry exists */}
+                                            {(!["Spouse", "Father", "Mother", "Sibling", "Son", "Daughter", "Friend", "Caregiver"].includes(editForm.emergencyContact1Relation) && editForm.emergencyContact1Relation !== "") || editForm.emergencyContact1Relation === "" ? (
+                                                <TextInput 
+                                                    style={[styles.inputSmall, { marginTop: 4 }]}
+                                                    placeholder="Specify custom relation..."
+                                                    placeholderTextColor="#94A3B8"
+                                                    value={editForm.emergencyContact1Relation}
+                                                    onChangeText={t => setEditForm({...editForm, emergencyContact1Relation: t})}
+                                                />
+                                            ) : null}
                                         </View>
                                     </View>
 
