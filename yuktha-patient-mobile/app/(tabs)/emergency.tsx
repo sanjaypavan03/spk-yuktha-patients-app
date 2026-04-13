@@ -718,7 +718,6 @@ function SelectorModal({ visible, onClose, title, options, onSelect, pos, curren
                                 ]}>
                                     {item}
                                 </Text>
-                                {currentVal === item && <CheckCircle2 size={18} color={theme.primary} />}
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
