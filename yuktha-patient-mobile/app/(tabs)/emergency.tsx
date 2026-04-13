@@ -363,15 +363,23 @@ const getStyles = (theme: any) => StyleSheet.create({
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
     },
     modalContent: {
-        backgroundColor: '#F8FAFC', // slate-50
-        borderTopLeftRadius: 36,
-        borderTopRightRadius: 36,
+        backgroundColor: '#F8FAFC',
+        borderRadius: 32,
         paddingBottom: 0,
-        height: '95%',
+        width: '100%',
+        maxHeight: '90%',
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 15 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 25,
     },
     modalHeader: {
         backgroundColor: '#FFF',
@@ -379,8 +387,6 @@ const getStyles = (theme: any) => StyleSheet.create({
         paddingBottom: 16,
         borderBottomWidth: 1,
         borderBottomColor: '#F1F5F9',
-        borderTopLeftRadius: 36,
-        borderTopRightRadius: 36,
     },
     modalTitleRow: {
         flexDirection: 'row',
