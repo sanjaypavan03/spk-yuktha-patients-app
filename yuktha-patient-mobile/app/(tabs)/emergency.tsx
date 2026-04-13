@@ -627,11 +627,36 @@ const getStyles = (theme: any) => StyleSheet.create({
     addBtnText: { color: theme.primary, fontWeight: 'bold', fontSize: 13 },
     switchSub: { fontSize: 12, color: '#94A3B8', marginTop: 2 },
     dropdownText: { fontSize: 15, color: '#1E293B' },
-    selectorBackdrop: { flex: 1, backgroundColor: 'transparent' },
-    floatingMenu: { position: 'absolute', borderRadius: 24, padding: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 15, borderWidth: 1, zIndex: 1000 },
-    menuScroll: { maxHeight: 250 },
-    menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, borderRadius: 12, marginBottom: 2 },
-    menuItemText: { fontSize: 14, fontWeight: '500' },
+    selectorBackdrop: { 
+        flex: 1, 
+        backgroundColor: 'rgba(15, 23, 42, 0.4)' // slate-900 with transparency
+    },
+    floatingMenu: { 
+        position: 'absolute', 
+        borderRadius: 24, 
+        padding: 8, 
+        shadowColor: '#000', 
+        shadowOffset: { width: 0, height: 20 }, 
+        shadowOpacity: 0.25, 
+        shadowRadius: 30, 
+        elevation: 30, 
+        borderWidth: 1, 
+        zIndex: 5000 
+    },
+    menuScroll: { maxHeight: 300 },
+    menuItem: { 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        paddingVertical: 14, 
+        paddingHorizontal: 16, 
+        borderRadius: 14, 
+        marginBottom: 4 
+    },
+    menuItemText: { 
+        fontSize: 15, 
+        fontWeight: '500' 
+    },
     skeletonList: { gap: 12 },
     skeletonItem: { height: 100, backgroundColor: '#F1F5F9', borderRadius: 24 },
     emptyInfoBox: { padding: 40, alignItems: 'center', backgroundColor: '#FFF', borderRadius: 24, borderWidth: 1, borderColor: '#F1F5F9', borderStyle: 'dashed' },
@@ -646,19 +671,46 @@ function SelectorModal({ visible, onClose, title, options, onSelect, pos, curren
     const filtered = options.filter((o: string) => o.toLowerCase().includes(search.toLowerCase()));
     const styles = getStyles(theme);
 
+    // Fine-tune positioning: ensure it stays within screen bounds
+    const screenWidth = SCREEN_WIDTH;
+    const menuWidth = pos.width;
+    const adjustedLeft = Math.min(Math.max(16, pos.x), screenWidth - menuWidth - 16);
+
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-            <TouchableOpacity style={styles.selectorBackdrop} onPress={onClose} activeOpacity={1}>
-                <View style={[styles.floatingMenu, { top: pos.y, left: pos.x, width: pos.width, backgroundColor: theme.card, borderColor: theme.border }]}>
-                    <ScrollView style={styles.menuScroll} bounces={false} showsVerticalScrollIndicator={false}>
+            <TouchableOpacity 
+                style={styles.selectorBackdrop} 
+                onPress={onClose} 
+                activeOpacity={1}
+            >
+                <View style={[
+                    styles.floatingMenu, 
+                    { 
+                        top: pos.y + 4, 
+                        left: adjustedLeft, 
+                        width: menuWidth, 
+                        backgroundColor: theme.card, 
+                        borderColor: theme.border 
+                    }
+                ]}>
+                    <ScrollView style={styles.menuScroll} bounces={true} showsVerticalScrollIndicator={false}>
                         {filtered.map((item: string) => (
                             <TouchableOpacity 
                                 key={item} 
-                                style={[styles.menuItem, currentVal === item && { backgroundColor: theme.accent }]}
+                                style={[
+                                    styles.menuItem, 
+                                    currentVal === item && { backgroundColor: theme.primary + '15' } // subtle brand tint
+                                ]}
                                 onPress={() => onSelect(item)}
                             >
-                                <Text style={[styles.menuItemText, { color: theme.foreground }, currentVal === item && { color: theme.primary, fontWeight: '700' }]}>{item}</Text>
-                                {currentVal === item && <CheckCircle2 size={14} color={theme.primary} />}
+                                <Text style={[
+                                    styles.menuItemText, 
+                                    { color: theme.foreground }, 
+                                    currentVal === item && { color: theme.primary, fontWeight: '700' }
+                                ]}>
+                                    {item}
+                                </Text>
+                                {currentVal === item && <CheckCircle2 size={18} color={theme.primary} />}
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
