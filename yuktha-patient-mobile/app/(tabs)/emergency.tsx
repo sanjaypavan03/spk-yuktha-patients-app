@@ -570,6 +570,14 @@ const getStyles = (theme: any) => StyleSheet.create({
             web: { outlineStyle: 'none' }
         } as any)
     },
+    inputLabelNested: {
+        fontSize: 10,
+        fontWeight: '900',
+        color: '#94A3B8',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: 6,
+    },
     dropdownSmall: {
         backgroundColor: '#F8FAFC',
         borderRadius: 12,
@@ -744,6 +752,8 @@ export default function EmergencyHubScreen() {
         hasMeds: false,
         currentMedications: '',
         emergencyContact1Name: '',
+        emergencyContact1Phone: '',
+        emergencyContact1Relation: '',
         hasPacemakerOrImplant: false,
         isPregnant: false,
         
@@ -755,6 +765,8 @@ export default function EmergencyHubScreen() {
         physicalActivityLevel: 'Moderate',
         pastSurgeries: [{ name: '', year: '' }],
         emergencyContact2Name: '',
+        emergencyContact2Phone: '',
+        emergencyContact2Relation: '',
         familyMedicalHistory: '',
         insuranceProvider: '',
         additionalNotes: ''
@@ -825,6 +837,8 @@ export default function EmergencyHubScreen() {
                         hasMeds: !!info.currentMedications,
                         currentMedications: info.currentMedications || '',
                         emergencyContact1Name: info.emergencyContact1Name || '',
+                        emergencyContact1Phone: info.emergencyContact1Phone || '',
+                        emergencyContact1Relation: info.emergencyContact1Relation || '',
                         hasPacemakerOrImplant: !!info.hasPacemakerOrImplant,
                         isPregnant: !!info.isPregnant,
 
@@ -835,6 +849,8 @@ export default function EmergencyHubScreen() {
                         physicalActivityLevel: info.physicalActivityLevel || 'Moderate',
                         pastSurgeries: (info.pastSurgeries?.length > 0) ? info.pastSurgeries : [{ name: '', year: '' }],
                         emergencyContact2Name: info.emergencyContact2Name || '',
+                        emergencyContact2Phone: info.emergencyContact2Phone || '',
+                        emergencyContact2Relation: info.emergencyContact2Relation || '',
                         familyMedicalHistory: info.familyMedicalHistory || '',
                         insuranceProvider: info.insuranceProvider || '',
                         additionalNotes: info.additionalNotes || ''
@@ -1254,16 +1270,43 @@ export default function EmergencyHubScreen() {
                                         )}
                                     </View>
 
-                                    {/* Contact */}
                                     <View style={styles.formCard}>
                                         <Text style={styles.formLabel}>5. Primary Emergency Contact</Text>
-                                        <TextInput 
-                                            style={styles.inputSmall}
-                                            placeholder="e.g. John Doe - 9876543210 - Father"
-                                            placeholderTextColor="#94A3B8"
-                                            value={editForm.emergencyContact1Name}
-                                            onChangeText={t => setEditForm({...editForm, emergencyContact1Name: t})}
-                                        />
+                                        <View style={{ gap: 10, marginTop: 12 }}>
+                                            <View>
+                                                <Text style={styles.inputLabelNested}>Contact Name</Text>
+                                                <TextInput 
+                                                    style={styles.inputSmall}
+                                                    placeholder="e.g. John Doe"
+                                                    placeholderTextColor="#94A3B8"
+                                                    value={editForm.emergencyContact1Name}
+                                                    onChangeText={t => setEditForm({...editForm, emergencyContact1Name: t})}
+                                                />
+                                            </View>
+                                            <View style={{ flexDirection: 'row', gap: 10 }}>
+                                                <View style={{ flex: 1.5 }}>
+                                                    <Text style={styles.inputLabelNested}>Phone Number</Text>
+                                                    <TextInput 
+                                                        style={styles.inputSmall}
+                                                        placeholder="9876543210"
+                                                        placeholderTextColor="#94A3B8"
+                                                        keyboardType="phone-pad"
+                                                        value={editForm.emergencyContact1Phone}
+                                                        onChangeText={t => setEditForm({...editForm, emergencyContact1Phone: t})}
+                                                    />
+                                                </View>
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={styles.inputLabelNested}>Relation</Text>
+                                                    <TextInput 
+                                                        style={styles.inputSmall}
+                                                        placeholder="e.g. Father"
+                                                        placeholderTextColor="#94A3B8"
+                                                        value={editForm.emergencyContact1Relation}
+                                                        onChangeText={t => setEditForm({...editForm, emergencyContact1Relation: t})}
+                                                    />
+                                                </View>
+                                            </View>
+                                        </View>
                                     </View>
 
                                     {/* Implant Toggle */}

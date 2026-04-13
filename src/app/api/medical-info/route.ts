@@ -28,10 +28,10 @@ export async function POST(request: NextRequest) {
 
     const validFields = [
       'bloodGroup', 'knownAllergies', 'allergiesDetails', 'chronicConditions',
-      'currentMedications', 'emergencyContact1Name', 'hasPacemakerOrImplant',
-      'height', 'weight', 'smokingStatus', 'alcoholUse', 'physicalActivityLevel',
+      'currentMedications', 'emergencyContact1Name', 'emergencyContact1Phone', 'emergencyContact1Relation',
+      'hasPacemakerOrImplant', 'height', 'weight', 'smokingStatus', 'alcoholUse', 'physicalActivityLevel',
       'pastSurgeries', 'familyMedicalHistory', 'insuranceProvider', 'additionalNotes',
-      'emergencyContact2Name'
+      'emergencyContact2Name', 'emergencyContact2Phone', 'emergencyContact2Relation'
     ];
 
     const updateData: any = {};
@@ -48,6 +48,23 @@ export async function POST(request: NextRequest) {
         updateData[field] = val;
       }
     });
+
+    // Map flattened contact fields to emergencyContacts array for model compatibility
+    if (updateData.emergencyContact1Name || updateData.emergencyContact1Phone || updateData.emergencyContact1Relation) {
+        updateData.emergencyContacts = [{
+            name: updateData.emergencyContact1Name || '',
+            phone: updateData.emergencyContact1Phone || '',
+            relationship: updateData.emergencyContact1Relation || ''
+        }];
+        
+        if (updateData.emergencyContact2Name || updateData.emergencyContact2Phone || updateData.emergencyContact2Relation) {
+            updateData.emergencyContacts.push({
+                name: updateData.emergencyContact2Name || '',
+                phone: updateData.emergencyContact2Phone || '',
+                relationship: updateData.emergencyContact2Relation || ''
+            });
+        }
+    }
 
     const medicalInfo = await MedicalInfo.findOneAndUpdate(
       { userId: authUser.userId },

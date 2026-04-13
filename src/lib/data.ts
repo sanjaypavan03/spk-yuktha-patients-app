@@ -103,6 +103,8 @@ export type EmergencyInfo = {
     allergiesDetails?: string;
     currentMedications?: string;
     emergencyContact1Name?: string;
+    emergencyContact1Phone?: string;
+    emergencyContact1Relation?: string;
     hasPacemakerOrImplant?: boolean;
     height?: string;
     smokingStatus?: string;
@@ -110,6 +112,8 @@ export type EmergencyInfo = {
     physicalActivityLevel?: string;
     pastSurgeries?: { name: string; year: string }[];
     emergencyContact2Name?: string;
+    emergencyContact2Phone?: string;
+    emergencyContact2Relation?: string;
     familyMedicalHistory?: string;
     insuranceProvider?: string;
     additionalNotes?: string;
