@@ -726,6 +726,7 @@ export default function EmergencyHubScreen() {
     const router = useRouter();
 
     const [medicalInfo, setMedicalInfo] = useState<any>(null);
+    const [medicines, setMedicines] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -776,7 +777,33 @@ export default function EmergencyHubScreen() {
 
     useEffect(() => {
         fetchMedicalInfo();
+        fetchMedicines();
     }, [user, token]);
+
+    const fetchMedicines = async () => {
+        try {
+            const res = await fetch(`${API_URL}/api/medicines`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const json = await res.json();
+                const meds = json.data || [];
+                setMedicines(meds);
+                
+                // Auto-sync the med info string for the emergency file
+                if (meds.length > 0) {
+                    const formatted = meds.map((m: any) => `${m.name} (${m.dosage})`).join(', ');
+                    setEditForm(prev => ({ 
+                        ...prev, 
+                        hasMeds: true,
+                        currentMedications: formatted 
+                    }));
+                }
+            }
+        } catch (e) {
+            console.error("Failed to fetch meds for emergency hub:", e);
+        }
+    };
 
     const fetchMedicalInfo = async () => {
         try {
@@ -1199,21 +1226,31 @@ export default function EmergencyHubScreen() {
                                     <View style={styles.formCard}>
                                         <View style={styles.switchHeader}>
                                             <Text style={styles.formLabel}>4. Current Medications</Text>
-                                            <Switch 
-                                                value={editForm.hasMeds} 
-                                                onValueChange={v => setEditForm({...editForm, hasMeds: v})}
-                                                trackColor={{ false: '#E2E8F0', true: theme.primary }}
-                                            />
+                                            <View style={{ backgroundColor: theme.primary + '11', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
+                                                <Text style={{ fontSize: 10, fontWeight: 'bold', color: theme.primary }}>AUTO-SYNCED</Text>
+                                            </View>
                                         </View>
-                                        {editForm.hasMeds && (
-                                            <TextInput 
-                                                style={styles.textAreaSmall}
-                                                multiline
-                                                placeholder="e.g. Metformin 500mg twice daily"
-                                                placeholderTextColor="#94A3B8"
-                                                value={editForm.currentMedications}
-                                                onChangeText={t => setEditForm({...editForm, currentMedications: t})}
-                                            />
+                                        
+                                        {medicines.length > 0 ? (
+                                            <View style={[styles.textAreaSmall, { backgroundColor: '#F1F5F9', borderStyle: 'dashed' }]}>
+                                                <Text style={[styles.dropdownText, { lineHeight: 22, opacity: 0.8 }]}>
+                                                    {medicines.map((m: any) => `${m.name} (${m.dosage})`).join(', ')}
+                                                </Text>
+                                                <TouchableOpacity 
+                                                    style={{ marginTop: 8 }}
+                                                    onPress={() => { setIsModalOpen(false); router.push('/(tabs)/meds'); }}
+                                                >
+                                                    <Text style={{ fontSize: 13, color: theme.primary, fontWeight: '700' }}>+ Edit in Med Tracker</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        ) : (
+                                            <TouchableOpacity 
+                                                style={styles.emptyInfoBox}
+                                                onPress={() => { setIsModalOpen(false); router.push('/(tabs)/meds'); }}
+                                            >
+                                                <Text style={styles.emptyInfoText}>No medications added yet.</Text>
+                                                <Text style={{ color: theme.primary, fontWeight: 'bold', marginTop: 8 }}>Open Med Tracker</Text>
+                                            </TouchableOpacity>
                                         )}
                                     </View>
 
