@@ -52,16 +52,74 @@ export default function ProfileScreen() {
     const [isSaving, setIsSaving] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [isPinModalOpen, setIsPinModalOpen] = useState(false);
-    const [newPin, setNewPin] = useState(['', '', '', '']);
+    const [pinStage, setPinStage] = useState<'VERIFY_OLD' | 'SET_NEW'>('SET_NEW');
+    const [typedPin, setTypedPin] = useState(['', '', '', '']);
+    const [oldPinValue, setOldPinValue] = useState('');
     const [pinError, setPinError] = useState('');
 
-    const handleSetPin = async () => {
-        const pinString = newPin.join('');
+    const openPinSettings = async () => {
+        setIsSaving(true);
+        try {
+            const res = await fetch(`${API_URL}/api/auth/vault-pin/check`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await res.json();
+            
+            setPinError('');
+            setTypedPin(['', '', '', '']);
+            setOldPinValue('');
+            
+            if (data.hasPin) {
+                setPinStage('VERIFY_OLD');
+            } else {
+                setPinStage('SET_NEW');
+            }
+            setIsPinModalOpen(true);
+        } catch (error) {
+            Alert.alert("Error", "Unable to access security settings.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handlePinSubmit = async () => {
+        const pinString = typedPin.join('');
         if (pinString.length !== 4) {
             setPinError("Please enter a 4-digit PIN");
             return;
         }
 
+        if (pinStage === 'VERIFY_OLD') {
+            // Verify old PIN first
+            setIsSaving(true);
+            try {
+                const res = await fetch(`${API_URL}/api/auth/vault-pin/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ pin: pinString })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setOldPinValue(pinString);
+                    setPinStage('SET_NEW');
+                    setTypedPin(['', '', '', '']);
+                    setPinError('');
+                } else {
+                    setPinError("Incorrect current PIN");
+                    setTypedPin(['', '', '', '']);
+                }
+            } catch (e) {
+                setPinError("Verification failed");
+            } finally {
+                setIsSaving(false);
+            }
+            return;
+        }
+
+        // SET_NEW Stage
         setIsSaving(true);
         try {
             const res = await fetch(`${API_URL}/api/auth/vault-pin`, {
@@ -70,20 +128,23 @@ export default function ProfileScreen() {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ pin: pinString })
+                body: JSON.stringify({ 
+                    pin: pinString,
+                    oldPin: oldPinValue || undefined
+                })
             });
 
             if (res.ok) {
                 Alert.alert("Success", "Vault PIN updated successfully.");
                 setIsPinModalOpen(false);
-                setNewPin(['', '', '', '']);
                 setPinError('');
             } else {
                 const data = await res.json();
                 setPinError(data.error || "Failed to update PIN");
+                setTypedPin(['', '', '', '']);
             }
         } catch (error) {
-            setPinError("Service unavailable. Try again later.");
+            setPinError("Service unavailable.");
         } finally {
             setIsSaving(false);
         }
@@ -139,7 +200,7 @@ export default function ProfileScreen() {
         { icon: Bell, title: "Notifications", description: "Medicine reminders and alerts", action: <Switch value={notificationsEnabled} onValueChange={setNotificationsEnabled} trackColor={{ false: '#E2E8F0', true: '#10B981' }} /> },
         { icon: Moon, title: "Theme", description: "Switch to Dark Mode", action: <Switch value={isDarkMode} onValueChange={toggleDarkMode} trackColor={{ false: '#E2E8F0', true: '#10B981' }} /> },
         { icon: Users, title: "Family Members", description: "Manage caregiver access", href: "/family" },
-        { icon: Lock, title: "Health Vault PIN", description: "Change your 4-digit security code", onPress: () => setIsPinModalOpen(true) },
+        { icon: Lock, title: "Health Vault PIN", description: "Change your 4-digit security code", onPress: openPinSettings },
         { icon: Shield, title: "Privacy & Security", description: "Data protection settings", href: "#" },
         { icon: HelpCircle, title: "Help & Support", description: "FAQs and contact support", href: "#" },
     ];
@@ -341,8 +402,14 @@ export default function ProfileScreen() {
                                 <View style={styles.lockIconBox}>
                                     <Lock size={24} color={theme.primary} />
                                 </View>
-                                <Text style={styles.pinModalTitle}>Vault Security</Text>
-                                <Text style={styles.pinModalSub}>Set a 4-digit code to protect your records</Text>
+                                <Text style={styles.pinModalTitle}>
+                                    {pinStage === 'VERIFY_OLD' ? 'Verify Current PIN' : 'Set Vault PIN'}
+                                </Text>
+                                <Text style={styles.pinModalSub}>
+                                    {pinStage === 'VERIFY_OLD' 
+                                        ? 'Enter your existing code to continue' 
+                                        : 'Set a new 4-digit code to protect your records'}
+                                </Text>
                             </View>
 
                             <View style={styles.pinDisplayRow}>
@@ -351,10 +418,10 @@ export default function ProfileScreen() {
                                         key={idx} 
                                         style={[
                                             styles.pinBox, 
-                                            newPin[idx] !== '' && { borderColor: theme.primary, backgroundColor: theme.accent }
+                                            typedPin[idx] !== '' && { borderColor: theme.primary, backgroundColor: theme.accent }
                                         ]}
                                     >
-                                        <Text style={styles.pinBoxText}>{newPin[idx] ? '•' : ''}</Text>
+                                        <Text style={styles.pinBoxText}>{typedPin[idx] ? '•' : ''}</Text>
                                     </View>
                                 ))}
                             </View>
@@ -371,15 +438,15 @@ export default function ProfileScreen() {
                                         ]}
                                         onPress={() => {
                                             if (val === 'C') {
-                                                setNewPin(['', '', '', '']);
+                                                setTypedPin(['', '', '', '']);
                                             } else if (val === '✓') {
-                                                handleSetPin();
+                                                handlePinSubmit();
                                             } else {
-                                                const idx = newPin.findIndex(p => p === '');
+                                                const idx = typedPin.findIndex(p => p === '');
                                                 if (idx !== -1) {
-                                                    const p = [...newPin];
+                                                    const p = [...typedPin];
                                                     p[idx] = val.toString();
-                                                    setNewPin(p);
+                                                    setTypedPin(p);
                                                 }
                                             }
                                         }}
@@ -397,7 +464,7 @@ export default function ProfileScreen() {
                                 style={styles.closePinBtn} 
                                 onPress={() => {
                                     setIsPinModalOpen(false);
-                                    setNewPin(['', '', '', '']);
+                                    setTypedPin(['', '', '', '']);
                                     setPinError('');
                                 }}
                             >

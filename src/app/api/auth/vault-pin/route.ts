@@ -14,10 +14,24 @@ export async function POST(request: NextRequest) {
     const authUser = await getAuthenticatedUser(request);
     if (!authUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { pin } = await request.json();
+    const { pin, oldPin } = await request.json();
 
     if (!pin || pin.length !== 4 || !/^\d+$/.test(pin)) {
-      return NextResponse.json({ error: 'PIN must be exactly 4 digits' }, { status: 400 });
+      return NextResponse.json({ error: 'New PIN must be exactly 4 digits' }, { status: 400 });
+    }
+
+    // Check if user already has a PIN
+    const medicalInfo = await MedicalInfo.findOne({ patientId: authUser.userId }).select('+emergencyPin');
+    
+    if (medicalInfo && medicalInfo.emergencyPin) {
+        if (!oldPin) {
+            return NextResponse.json({ error: 'Current PIN is required to set a new one' }, { status: 400 });
+        }
+        
+        const isMatch = await bcrypt.compare(oldPin, medicalInfo.emergencyPin);
+        if (!isMatch) {
+            return NextResponse.json({ error: 'Incorrect current PIN' }, { status: 403 });
+        }
     }
 
     const salt = await bcrypt.genSalt(10);
