@@ -1007,7 +1007,8 @@ export default function EmergencyHubScreen() {
                             <View style={styles.patientCard}>
                                 <View>
                                     <Text style={styles.patientLabel}>Patient Name</Text>
-                                    <Text style={styles.patientNameMain}>{user?.firstName} {user?.lastName}</Text>
+                                    <Text style={styles.patientNameMain}>{user?.name || 'Generic Patient'}</Text>
+
                                 </View>
                                 <TouchableOpacity onPress={() => { setIsModalOpen(false); router.push('/profile'); }}>
                                     <Edit2 size={18} color={theme.primary} />
