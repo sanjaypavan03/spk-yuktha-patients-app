@@ -11,6 +11,12 @@ import { ThemeProvider } from '../src/context/ThemeContext';
 
 SplashScreen.preventAutoHideAsync();
 
+export const unstable_settings = {
+  // Ensure that reloading on `/emergency` keeps a back button present or 
+  // defaults correctly to the index route.
+  initialRouteName: 'index',
+};
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Outfit_400Regular,
