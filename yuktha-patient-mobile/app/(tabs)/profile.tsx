@@ -12,7 +12,8 @@ import {
     Alert,
     Image,
     SafeAreaView,
-    Switch
+    Switch,
+    Modal
 } from 'react-native';
 import { 
     ArrowLeft, 
