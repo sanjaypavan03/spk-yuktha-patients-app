@@ -629,7 +629,7 @@ const getStyles = (theme: any) => StyleSheet.create({
     dropdownText: { fontSize: 15, color: '#1E293B' },
     selectorBackdrop: { 
         flex: 1, 
-        backgroundColor: 'rgba(15, 23, 42, 0.4)' // slate-900 with transparency
+        backgroundColor: 'transparent'
     },
     floatingMenu: { 
         position: 'absolute', 
