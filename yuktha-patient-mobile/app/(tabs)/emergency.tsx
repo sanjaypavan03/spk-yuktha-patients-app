@@ -1305,14 +1305,14 @@ export default function EmergencyHubScreen() {
                                                                 setSelector({
                                                                     visible: true,
                                                                     type: 'emergencyContact1Relation',
-                                                                    options: ["Spouse", "Father", "Mother", "Sibling", "Son", "Daughter", "Friend", "Caregiver", "Other..."] as any,
+                                                                    options: ["Father", "Mother", "Spouse", "Sibling", "Son", "Daughter", "Friend", "Caregiver", "Other..."] as any,
                                                                     pos: { x: px, y: py + h, width: w }
                                                                 });
                                                             });
                                                         }}
                                                     >
                                                         <Text style={styles.dropdownText}>
-                                                            {["Spouse", "Father", "Mother", "Sibling", "Son", "Daughter", "Friend", "Caregiver"].includes(editForm.emergencyContact1Relation) 
+                                                            {["Father", "Mother", "Spouse", "Sibling", "Son", "Daughter", "Friend", "Caregiver"].includes(editForm.emergencyContact1Relation) 
                                                                 ? editForm.emergencyContact1Relation 
                                                                 : editForm.emergencyContact1Relation ? "Other..." : "Select"}
                                                         </Text>
@@ -1322,7 +1322,7 @@ export default function EmergencyHubScreen() {
                                             </View>
 
                                             {/* Manual Relation Input if Other is selected or custom entry exists */}
-                                            {(!["Spouse", "Father", "Mother", "Sibling", "Son", "Daughter", "Friend", "Caregiver"].includes(editForm.emergencyContact1Relation) && editForm.emergencyContact1Relation !== "") || editForm.emergencyContact1Relation === "" ? (
+                                            {(!["Father", "Mother", "Spouse", "Sibling", "Son", "Daughter", "Friend", "Caregiver"].includes(editForm.emergencyContact1Relation) && editForm.emergencyContact1Relation !== "") || editForm.emergencyContact1Relation === "" ? (
                                                 <TextInput 
                                                     style={[styles.inputSmall, { marginTop: 4 }]}
                                                     placeholder="Specify custom relation..."
