@@ -10,6 +10,7 @@ import {
     Platform
 } from 'react-native';
 import { Lock, Shield, X, AlertCircle, Check } from "lucide-react-native";
+import { useAuth } from '../context/AuthContext';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -26,11 +27,11 @@ const languages = [
     "محفوظ", "பாதுகாப்பான", "సురక్షిత", "محفوظ"
 ];
 
-const CORRECT_PIN = "1234";
-
 export function SecretVaultModal({ isOpen, onClose, onSuccess }: SecretVaultModalProps) {
+    const { token, API_URL } = useAuth();
     const [pin, setPin] = useState(['', '', '', '']);
     const [error, setError] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
     const [langIndex, setLangIndex] = useState(0);
     const shakeAnimation = useRef(new Animated.Value(0)).current;
 
@@ -38,6 +39,7 @@ export function SecretVaultModal({ isOpen, onClose, onSuccess }: SecretVaultModa
         if (isOpen) {
             setPin(['', '', '', '']);
             setError(false);
+            setIsVerifying(false);
             const interval = setInterval(() => {
                 setLangIndex((prev) => (prev + 1) % languages.length);
             }, 800);
@@ -54,7 +56,33 @@ export function SecretVaultModal({ isOpen, onClose, onSuccess }: SecretVaultModa
         ]).start();
     };
 
+    const verifyPin = async (finalPin: string) => {
+        setIsVerifying(true);
+        try {
+            const res = await fetch(`${API_URL}/api/auth/vault-pin/verify`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ pin: finalPin })
+            });
+            const data = await res.json();
+            if (data.success) {
+                onSuccess();
+            } else {
+                handleError();
+            }
+        } catch (err) {
+            console.error('PIN verification error:', err);
+            handleError();
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
     const handleNumberClick = (num: string) => {
+        if (isVerifying) return;
         setError(false);
         const index = pin.findIndex(p => p === '');
         if (index === -1) return;
@@ -65,28 +93,22 @@ export function SecretVaultModal({ isOpen, onClose, onSuccess }: SecretVaultModa
 
         if (index === 3) {
             const finalPin = newPin.join('');
-            if (finalPin === CORRECT_PIN) {
-                onSuccess();
-            } else {
-                handleError();
-            }
+            verifyPin(finalPin);
         }
     };
 
     const handleManualSubmit = () => {
+        if (isVerifying) return;
         const finalPin = pin.join('');
         if (finalPin.length === 4 && !pin.includes('')) {
-            if (finalPin === CORRECT_PIN) {
-                onSuccess();
-            } else {
-                handleError();
-            }
+            verifyPin(finalPin);
         } else {
             handleError();
         }
     };
 
     const handleClear = () => {
+        if (isVerifying) return;
         setPin(['', '', '', '']);
         setError(false);
     };

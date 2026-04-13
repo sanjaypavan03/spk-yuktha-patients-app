@@ -49,6 +49,43 @@ export default function ProfileScreen() {
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+    const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+    const [newPin, setNewPin] = useState(['', '', '', '']);
+    const [pinError, setPinError] = useState('');
+
+    const handleSetPin = async () => {
+        const pinString = newPin.join('');
+        if (pinString.length !== 4) {
+            setPinError("Please enter a 4-digit PIN");
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            const res = await fetch(`${API_URL}/api/auth/vault-pin`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ pin: pinString })
+            });
+
+            if (res.ok) {
+                Alert.alert("Success", "Vault PIN updated successfully.");
+                setIsPinModalOpen(false);
+                setNewPin(['', '', '', '']);
+                setPinError('');
+            } else {
+                const data = await res.json();
+                setPinError(data.error || "Failed to update PIN");
+            }
+        } catch (error) {
+            setPinError("Service unavailable. Try again later.");
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     const [editForm, setEditForm] = useState({
         name: '',
@@ -100,6 +137,7 @@ export default function ProfileScreen() {
         { icon: Bell, title: "Notifications", description: "Medicine reminders and alerts", action: <Switch value={notificationsEnabled} onValueChange={setNotificationsEnabled} trackColor={{ false: '#E2E8F0', true: '#10B981' }} /> },
         { icon: Moon, title: "Theme", description: "Switch to Dark Mode", action: <Switch value={isDarkMode} onValueChange={toggleDarkMode} trackColor={{ false: '#E2E8F0', true: '#10B981' }} /> },
         { icon: Users, title: "Family Members", description: "Manage caregiver access", href: "/family" },
+        { icon: Lock, title: "Health Vault PIN", description: "Change your 4-digit security code", onPress: () => setIsPinModalOpen(true) },
         { icon: Shield, title: "Privacy & Security", description: "Data protection settings", href: "#" },
         { icon: HelpCircle, title: "Help & Support", description: "FAQs and contact support", href: "#" },
     ];
@@ -264,7 +302,10 @@ export default function ProfileScreen() {
                             <TouchableOpacity 
                                 key={i} 
                                 style={styles.settingsItem}
-                                onPress={() => item.href && router.push(item.href as any)}
+                                onPress={() => {
+                                    if (item.onPress) item.onPress();
+                                    else if (item.href) router.push(item.href as any);
+                                }}
                                 activeOpacity={0.7}
                             >
                                 <View style={styles.settingsIconBox}>
@@ -285,6 +326,84 @@ export default function ProfileScreen() {
                     <LogOut size={20} color={theme.danger} strokeWidth={2.5} />
                     <Text style={styles.logoutText}>Disconnect Account</Text>
                 </TouchableOpacity>
+
+                <Modal
+                    visible={isPinModalOpen}
+                    transparent={true}
+                    animationType="slide"
+                    onRequestClose={() => setIsPinModalOpen(false)}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.pinModalContainer}>
+                            <View style={styles.pinModalHeader}>
+                                <View style={styles.lockIconBox}>
+                                    <Lock size={24} color={theme.primary} />
+                                </View>
+                                <Text style={styles.pinModalTitle}>Vault Security</Text>
+                                <Text style={styles.pinModalSub}>Set a 4-digit code to protect your records</Text>
+                            </View>
+
+                            <View style={styles.pinDisplayRow}>
+                                {[0, 1, 2, 3].map((idx) => (
+                                    <View 
+                                        key={idx} 
+                                        style={[
+                                            styles.pinBox, 
+                                            newPin[idx] !== '' && { borderColor: theme.primary, backgroundColor: theme.accent }
+                                        ]}
+                                    >
+                                        <Text style={styles.pinBoxText}>{newPin[idx] ? '•' : ''}</Text>
+                                    </View>
+                                ))}
+                            </View>
+
+                            {pinError ? <Text style={styles.pinErrorText}>{pinError}</Text> : null}
+
+                            <View style={styles.pinKeypad}>
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 'C', 0, '✓'].map((val) => (
+                                    <TouchableOpacity 
+                                        key={val}
+                                        style={[
+                                            styles.pinKey,
+                                            val === '✓' && { backgroundColor: theme.primary }
+                                        ]}
+                                        onPress={() => {
+                                            if (val === 'C') {
+                                                setNewPin(['', '', '', '']);
+                                            } else if (val === '✓') {
+                                                handleSetPin();
+                                            } else {
+                                                const idx = newPin.findIndex(p => p === '');
+                                                if (idx !== -1) {
+                                                    const p = [...newPin];
+                                                    p[idx] = val.toString();
+                                                    setNewPin(p);
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        {val === '✓' ? (
+                                            <Check size={20} color="white" strokeWidth={3} />
+                                        ) : (
+                                            <Text style={[styles.pinKeyText, val === '✓' && { color: 'white' }]}>{val}</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <TouchableOpacity 
+                                style={styles.closePinBtn} 
+                                onPress={() => {
+                                    setIsPinModalOpen(false);
+                                    setNewPin(['', '', '', '']);
+                                    setPinError('');
+                                }}
+                            >
+                                <Text style={styles.closePinBtnText}>Cancel</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
             </ScrollView>
         </SafeAreaView>
     );
@@ -687,5 +806,104 @@ const getStyles = (theme: any) => StyleSheet.create({
         fontWeight: '900',
         color: theme.danger,
         letterSpacing: -0.2,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(2, 6, 23, 0.8)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    pinModalContainer: {
+        width: '100%',
+        maxWidth: 340,
+        backgroundColor: theme.card,
+        borderRadius: 32,
+        padding: 24,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: theme.border,
+    },
+    pinModalHeader: {
+        alignItems: 'center',
+        marginBottom: 32,
+    },
+    lockIconBox: {
+        width: 56,
+        height: 56,
+        borderRadius: 20,
+        backgroundColor: theme.accent,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    pinModalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: theme.foreground,
+        fontFamily: Platform.OS === 'ios' ? 'Playfair Display' : 'serif',
+    },
+    pinModalSub: {
+        fontSize: 13,
+        color: theme.mutedForeground,
+        marginTop: 4,
+        textAlign: 'center',
+    },
+    pinDisplayRow: {
+        flexDirection: 'row',
+        gap: 16,
+        marginBottom: 12,
+    },
+    pinBox: {
+        width: 50,
+        height: 60,
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: theme.border,
+        backgroundColor: theme.muted,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    pinBoxText: {
+        fontSize: 24,
+        color: theme.foreground,
+        fontWeight: 'bold',
+    },
+    pinErrorText: {
+        color: theme.danger,
+        fontSize: 12,
+        fontWeight: 'bold',
+        marginBottom: 16,
+    },
+    pinKeypad: {
+        width: '100%',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 12,
+        marginBottom: 24,
+    },
+    pinKey: {
+        width: '28%',
+        aspectRatio: 1.5,
+        borderRadius: 16,
+        backgroundColor: theme.muted,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: theme.border,
+    },
+    pinKeyText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: theme.foreground,
+    },
+    closePinBtn: {
+        padding: 12,
+    },
+    closePinBtnText: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: theme.mutedForeground,
     }
 });
