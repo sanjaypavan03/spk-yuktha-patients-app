@@ -470,16 +470,15 @@ export default function ProfileScreen() {
                                     </View>
                                 </>
                             )}
-                        </View>
 
-                        <TouchableOpacity 
-                            style={styles.closePinBtn} 
-                            onPress={() => {
-                                setIsPinModalOpen(false);
-                                setTypedPin(['', '', '', '']);
-                                setPinError('');
-                            }}
-                        >
+                            <TouchableOpacity 
+                                style={styles.closePinBtn} 
+                                onPress={() => {
+                                    setIsPinModalOpen(false);
+                                    setTypedPin(['', '', '', '']);
+                                    setPinError('');
+                                }}
+                            >
                                 <Text style={styles.closePinBtnText}>Cancel</Text>
                             </TouchableOpacity>
                         </View>
