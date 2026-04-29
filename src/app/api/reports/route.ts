@@ -1,0 +1,153 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser } from '@/lib/auth';
+import { planGate } from '@/lib/plan-gate';
+import dbConnect from '@/lib/db';
+import { getReportModel } from '@/models/Report';
+import Appointment from '@/models/Appointment';
+import Notification from '@/models/Notification';
+import User from '@/models/User';
+import { analyzeMedicalReport } from '@/lib/gemini';
+
+export async function GET(request: NextRequest) {
+    try {
+        const authUser = await getAuthenticatedUser(request);
+        if (!authUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        const { searchParams } = new URL(request.url);
+        const memberId = searchParams.get('memberId');
+
+        const Report = await getReportModel();
+        const query: any = { userId: authUser.userId };
+        if (memberId) query.memberId = memberId;
+
+        const reports = await Report.find(query).sort({ createdAt: -1 });
+
+        return NextResponse.json({ reports });
+    } catch (error) {
+        console.error('GET Error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
+export async function POST(request: NextRequest) {
+    try {
+        const authUser = await getAuthenticatedUser(request);
+        if (!authUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        if (authUser.role === 'hospital' || authUser.role === 'receptionist') {
+            // Determine the hospital's plan:
+            // - For 'hospital' role: plan is in JWT (authUser.hospitalPlan)
+            // - For 'receptionist' role: plan must be looked up via hospitalId
+            let planToCheck = authUser.hospitalPlan;
+            if (authUser.role === 'receptionist' && authUser.hospitalId) {
+                await dbConnect();
+                const Hospital = (await import('@/models/Hospital')).default;
+                const hosp = await Hospital.findById(authUser.hospitalId).select('plan');
+                planToCheck = hosp?.plan;
+            }
+            const vaultGate = planGate(planToCheck, 'vault');
+            if (vaultGate) return vaultGate;
+        }
+
+        const body = await request.json();
+        const Report = await getReportModel();
+
+        // AI Analysis Phase
+        let aiAnalysis = body.analysis || null;
+        
+        // Only run AI if analysis isn't already provided by the frontend (Step 1 of the new flow)
+        if (!aiAnalysis) {
+            try {
+                // Prefer image data if available, otherwise analyze text
+                const analysisInput = body.fileDataUri ? { imageDataUri: body.fileDataUri } : (body.summary || body.title || "New Report");
+                aiAnalysis = await analyzeMedicalReport(analysisInput, { 
+                    language: body.language,
+                    reportType: body.type 
+                });
+                console.log("📊 AI Analysis Complete (On-the-fly)");
+            } catch (aiErr) {
+                console.error("AI Analysis failed (non-blocking):", aiErr);
+            }
+        } else {
+            console.log("📊 Using pre-existing AI Analysis");
+        }
+
+        // If hospital is uploading for a patient, use the provided userId
+        let targetUserId = authUser.userId;
+        if ((authUser.role === 'hospital' || authUser.role === 'receptionist') && body.userId) {
+            targetUserId = body.userId;
+        }
+
+        const newReport = await Report.create({
+            userId: targetUserId,
+            ...body,
+            analysis: aiAnalysis // Store GPT/Gemini results
+        });
+
+        // Trigger Notification for Doctor if there's an upcoming appointment OR active IP admission
+        try {
+            await dbConnect();
+            
+            // 1. Check upcoming appointment
+            const upcoming = await Appointment.findOne({
+                patientId: targetUserId,
+                status: 'booked',
+                date: { $gte: new Date() }
+            }).sort({ date: 1 }).populate('patientId', 'name');
+            
+            let notifiedDoctorId = upcoming?.doctorId;
+            let contextMessage = upcoming ? ('before your appointment on ' + new Date(upcoming.date).toLocaleDateString('en-IN')) : '';
+
+            // 2. If no upcoming appt, check active IP admission
+            if (!notifiedDoctorId) {
+                const IPAdmission = (await import('@/models/IPAdmission')).default;
+                const activeIP = await IPAdmission.findOne({
+                    patientId: targetUserId,
+                    status: 'admitted'
+                }).populate('patientId', 'name');
+
+                if (activeIP) {
+                    notifiedDoctorId = activeIP.doctorId;
+                    contextMessage = '(Inpatient monitored by you)';
+                }
+            }
+            
+            if (notifiedDoctorId) {
+                const patientName = body.patientName || 'A patient';
+                await Notification.create({
+                    recipientId: notifiedDoctorId.toString(),
+                    recipientRole: 'doctor',
+                    type: 'report_upload',
+                    title: 'New lab report uploaded',
+                    message: `${patientName} has a new lab report available ${contextMessage}`,
+                    relatedId: targetUserId.toString(),
+                    isRead: false
+                });
+            }
+        } catch (notifErr) {
+            console.error('Notification creation failed (non-blocking):', notifErr);
+        }
+
+        return NextResponse.json({ report: newReport }, { status: 201 });
+    } catch (error) {
+        console.error('POST Error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
+export async function DELETE(request: NextRequest) {
+    try {
+        const authUser = await getAuthenticatedUser(request);
+        if (!authUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        const { searchParams } = new URL(request.url);
+        const id = searchParams.get('id');
+
+        const Report = await getReportModel();
+        await Report.deleteOne({ _id: id, userId: authUser.userId });
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
